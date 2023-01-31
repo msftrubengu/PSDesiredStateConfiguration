@@ -3842,7 +3842,7 @@ function ReadEnvironmentFile
 
 function Get-DSCResourceModules
 {
-    $listPSModuleFolders = $env:PSModulePath.Split(":")
+    $listPSModuleFolders = $env:PSModulePath.Split([IO.Path]::PathSeparator)
     $dscModuleFolderList = [System.Collections.Generic.HashSet[System.String]]::new()
 
     foreach ($folder in $listPSModuleFolders)
@@ -4050,7 +4050,7 @@ function Get-DscResource
 
     End
     {
-        $Resources = $Resources | Sort-Object -Property Module, Name
+        $Resources = $Resources | Sort-Object -Property Module, Name -Unique
         foreach ($resource in $Resources)
         {
             # return formatted string if required
@@ -4141,7 +4141,8 @@ function GetResourceFromKeyword
                 $schemaToProcess = $classesFromSchema | ForEach-Object -Process {
                     if(($_.CimSystemProperties.ClassName -ieq $keyword.ResourceName) -and ($_.CimSuperClassName -ieq 'OMI_BaseResource'))
                     {
-                        if ([ExperimentalFeature]::IsEnabled("PSDesiredStateConfiguration.InvokeDscResource"))
+                        $member = Get-Member -InputObject $_ -MemberType NoteProperty -Name 'ImplementationDetail'
+                        if ($null -eq $member)
                         {
                             $_ | Add-Member -MemberType NoteProperty -Name 'ImplementationDetail' -Value $implementationDetail -PassThru
                         }
@@ -4211,10 +4212,7 @@ function GetResourceFromKeyword
         Ascending  = $true
     }
     $resource.UpdateProperties($updatedProperties)
-    if ([ExperimentalFeature]::IsEnabled("PSDesiredStateConfiguration.InvokeDscResource"))
-    {
-        $resource | Add-Member -MemberType NoteProperty -Name 'ImplementationDetail' -Value $implementationDetail
-    }
+    $resource | Add-Member -MemberType NoteProperty -Name 'ImplementationDetail' -Value $implementationDetail
 
     return $resource
 }
@@ -4641,7 +4639,6 @@ Export-ModuleMember -Function Get-DscResource, Configuration
 
 function Invoke-DscResource
 {
-    [Experimental("PSDesiredStateConfiguration.InvokeDscResource", "Show")]
     [CmdletBinding(HelpUri = '')]
     param (
         [Parameter(ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true, Mandatory)]
