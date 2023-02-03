@@ -4050,7 +4050,7 @@ function Get-DscResource
 
     End
     {
-        $Resources = $Resources | Sort-Object -Property Module, Name -Unique
+        $Resources = $Resources | Sort-Object -Property Module, Version, Name -Unique
         foreach ($resource in $Resources)
         {
             # return formatted string if required
