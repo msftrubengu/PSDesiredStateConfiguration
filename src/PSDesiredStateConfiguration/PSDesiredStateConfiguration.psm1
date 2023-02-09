@@ -4743,18 +4743,15 @@ function Invoke-DscClassBasedResource
     $type = $resource.ResourceType
 
     Write-Debug "Importing $path ..."
-    $iss = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault2()
-    $powershell = [PowerShell]::Create($iss)
-    $script = @"
+    $sb = [scriptblock]::Create(@"
 using module $path
 
 Write-Host -Message ([$type]::new | out-string)
 return [$type]::new()
 "@
+    )
+    $dscType = Invoke-Command -ScriptBlock $sb
 
-
-    $null= $powershell.AddScript($script)
-    $dscType=$powershell.Invoke() | Select-object -First 1
     foreach($key in $Property.Keys)
     {
         $value = $Property.$key
